@@ -1,0 +1,13 @@
+{
+  "name": "pitcrew",
+  "description": "Evidence-driven engineering workflow for coding agents",
+  "owner": { "name": "Hin-Nattapat" },
+  "plugins": [
+    {
+      "name": "pitcrew",
+      "source": "./",
+      "description": "Evidence-driven engineering workflow for coding agents working in unfamiliar, large, or interconnected repositories",
+      "category": "development"
+    }
+  ]
+}
