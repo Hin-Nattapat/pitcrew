@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { chooseInteractive } from '../bin/pitcrew.js';
 
 const installer = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'bin', 'pitcrew.js');
 
@@ -47,4 +48,14 @@ test('does not partially install all targets when one destination exists', () =>
     /already exists/,
   );
   assert.equal(existsSync(join(project, '.agents')), false);
+});
+
+test('interactive chooser returns the selected target and scope', async () => {
+  const answers = await chooseInteractive({
+    select: async ({ message, choices }) => message.startsWith('Install for')
+      ? choices.find(({ value }) => value === 'antigravity').value
+      : choices.find(({ value }) => value === 'global').value,
+  });
+
+  assert.deepEqual(answers, { target: 'antigravity', scope: 'global' });
 });

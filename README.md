@@ -28,16 +28,20 @@ Use Pitcrew for unfamiliar brownfield code, cross-repository changes, shared con
 
 ## Install with the Pitcrew wizard
 
-The wizard asks which harness and scope to install. From a local clone:
+The wizard asks which harness and scope to install. Clone Pitcrew once, then run it from the project you want to configure:
 
 ```bash
-node /path/to/pitcrew/bin/pitcrew.js install
+git clone https://github.com/Hin-Nattapat/pitcrew.git ~/Tools/pitcrew
+cd <target-project>
+node ~/Tools/pitcrew/bin/pitcrew.js install
 ```
+
+Replace `<target-project>` with the project directory; do not run the placeholder literally.
 
 For automation, pass the choices directly:
 
 ```bash
-node /path/to/pitcrew/bin/pitcrew.js install --target antigravity --scope project
+node ~/Tools/pitcrew/bin/pitcrew.js install --target antigravity --scope project
 ```
 
 Supported targets are `antigravity`, `codex`, `claude`, and `all`. Supported scopes are `project` and `global`. `--dry-run` previews destinations; existing installations require `--force`.
@@ -54,21 +58,21 @@ The project-local destination is `.agents/skills/pitcrew`, which Antigravity CLI
 
 ## Install for Codex
 
-From a local clone, copy `skills/pitcrew` into the target project's `.agents/skills/` directory, then restart Codex:
+The wizard installs the skill into the target project's `.agents/skills/` directory. To do it manually from the clone:
 
 ```bash
-mkdir -p /path/to/project/.agents/skills
-cp -R /path/to/pitcrew/skills/pitcrew /path/to/project/.agents/skills/
+mkdir -p .agents/skills
+cp -R ~/Tools/pitcrew/skills/pitcrew .agents/skills/
 ```
 
 Invoke it as `$pitcrew`. This project-local route is verified. Marketplace installation is future work and is not yet documented as available.
 
 ## Install for Claude Code
 
-Run Claude Code with the local plugin during evaluation or development:
+The wizard installs the direct skill into `.claude/skills/`. For plugin development, run Claude Code with the clone:
 
 ```bash
-claude --plugin-dir /path/to/pitcrew
+claude --plugin-dir ~/Tools/pitcrew
 ```
 
 Invoke the plugin skill as `/pitcrew:pitcrew`. Plugin discovery and manifest validation are verified; a behavioral Claude run and public marketplace installation are not yet verified.
