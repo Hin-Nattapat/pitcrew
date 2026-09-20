@@ -26,6 +26,32 @@ Use Pitcrew for unfamiliar brownfield code, cross-repository changes, shared con
 | `VERIFYING` | Scrutineering | Requirements, risks, impact, changes, and tests reconcile. |
 | `DONE` | Chequered Flag | No blocking unknown remains. |
 
+## Install with the Pitcrew wizard
+
+The wizard asks which harness and scope to install. From a local clone:
+
+```bash
+node /path/to/pitcrew/bin/pitcrew.js install
+```
+
+For automation, pass the choices directly:
+
+```bash
+node /path/to/pitcrew/bin/pitcrew.js install --target antigravity --scope project
+```
+
+Supported targets are `antigravity`, `codex`, `claude`, and `all`. Supported scopes are `project` and `global`. `--dry-run` previews destinations; existing installations require `--force`.
+
+After publishing the npm package, the same interface will be available as:
+
+```bash
+npx pitcrew install
+```
+
+## Install for Antigravity CLI
+
+The project-local destination is `.agents/skills/pitcrew`, which Antigravity CLI discovers automatically. Start `agy`, run `/skills` to confirm discovery, then invoke `/pitcrew`. The global destination is `~/.gemini/antigravity-cli/skills/pitcrew`.
+
 ## Install for Codex
 
 From a local clone, copy `skills/pitcrew` into the target project's `.agents/skills/` directory, then restart Codex:
