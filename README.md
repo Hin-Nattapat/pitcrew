@@ -32,6 +32,8 @@ The wizard asks which harness and scope to install. Clone Pitcrew once, then run
 
 ```bash
 git clone https://github.com/Hin-Nattapat/pitcrew.git ~/Tools/pitcrew
+cd ~/Tools/pitcrew
+npm install
 cd <target-project>
 node ~/Tools/pitcrew/bin/pitcrew.js install
 ```

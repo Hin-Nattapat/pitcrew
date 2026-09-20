@@ -71,6 +71,10 @@ async function choose(options) {
   return { ...options, ...(await chooseInteractive()) };
 }
 
+export function applySelection(options, selection) {
+  Object.assign(options, selection);
+}
+
 function destinations(target, scope, cwd) {
   const names = target === 'all' ? Object.keys(targets) : [target];
   const paths = new Map();
@@ -91,7 +95,7 @@ async function main() {
   if (options.command !== 'install') throw new Error(`Unknown command: ${options.command}`);
   if (!existsSync(source)) throw new Error(`Pitcrew skill source is missing: ${source}`);
 
-  await choose(options);
+  applySelection(options, await choose(options));
   if (!['antigravity', 'codex', 'claude', 'all'].includes(options.target)) throw new Error(`Invalid target: ${options.target}`);
   if (!['project', 'global'].includes(options.scope)) throw new Error(`Invalid scope: ${options.scope}`);
 
