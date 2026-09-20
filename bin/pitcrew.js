@@ -85,8 +85,10 @@ async function main() {
   if (!['project', 'global'].includes(options.scope)) throw new Error(`Invalid scope: ${options.scope}`);
 
   const locations = destinations(options.target, options.scope, process.cwd());
+  const existing = locations.filter(({ path }) => existsSync(path) && !options.force);
+  if (existing.length) throw new Error(`${existing.map(({ path }) => path).join(', ')} already exists; use --force to replace it.`);
+
   for (const { path, label } of locations) {
-    if (existsSync(path) && !options.force) throw new Error(`${path} already exists; use --force to replace it.`);
     console.log(`${options.dryRun ? 'Would install' : 'Installing'} Pitcrew for ${label}: ${path}`);
     if (!options.dryRun) {
       mkdirSync(dirname(path), { recursive: true });

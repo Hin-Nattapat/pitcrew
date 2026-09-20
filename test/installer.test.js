@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,4 +36,15 @@ test('dry-run reports a destination without writing it', () => {
 test('supports help before the install subcommand', () => {
   const output = execFileSync(process.execPath, [installer, '--help'], { encoding: 'utf8' });
   assert.match(output, /Pitcrew installer/);
+});
+
+test('does not partially install all targets when one destination exists', () => {
+  const project = mkdtempSync(join(tmpdir(), 'pitcrew-install-'));
+  mkdirSync(join(project, '.claude', 'skills', 'pitcrew'), { recursive: true });
+
+  assert.throws(
+    () => execFileSync(process.execPath, [installer, 'install', '--target', 'all', '--scope', 'project'], { cwd: project, stdio: 'pipe' }),
+    /already exists/,
+  );
+  assert.equal(existsSync(join(project, '.agents')), false);
 });
