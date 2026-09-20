@@ -18,8 +18,5 @@
   "scripts": {
     "test": "node --test"
   },
-  "license": "MIT",
-  "dependencies": {
-    "@inquirer/prompts": "^8.7.2"
-  }
+  "license": "MIT"
 }
