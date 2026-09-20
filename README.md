@@ -6,7 +6,7 @@ Pitcrew is an evidence-driven engineering workflow for coding agents working in 
 
 ## Status
 
-V0.1 is a documentation-first public pilot. The skill, durable task artifacts, Codex project installation and fresh-session resumption, and Claude Code local-plugin discovery are implemented. Claude behavioral resumption remains unverified because the smoke run hit the account's weekly limit. The first behavioral comparison found no treatment blocker in the comparable scenarios, but did not measure tokens or prove that Pitcrew caused better outcomes. See [the comparison](evals/results/v0-comparison.md) and [smoke record](evals/results/v0-smoke.md).
+V0.1 is a documentation-first public pilot. The skill, durable task artifacts, Codex project installation and fresh-session resumption, and Claude Code local-plugin discovery are implemented. Claude behavioral resumption remains unverified because the smoke run hit the account's weekly limit. One real task has run end to end on Antigravity CLI, recorded in [the field log](evals/field-log.md); it delivered an accepted result and resumed from its artifacts after a context reset, but ran a single arm and measured no cost. The first behavioral comparison found no treatment blocker in the comparable scenarios, but did not measure tokens or prove that Pitcrew caused better outcomes. See [the comparison](evals/results/v0-comparison.md) and [smoke record](evals/results/v0-smoke.md).
 
 ## When to use it
 
