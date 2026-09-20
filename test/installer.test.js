@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { chooseInteractive } from '../bin/pitcrew.js';
+import { applySelection, chooseInteractive } from '../bin/pitcrew.js';
 
 const installer = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'bin', 'pitcrew.js');
 
@@ -58,4 +58,13 @@ test('interactive chooser returns the selected target and scope', async () => {
   });
 
   assert.deepEqual(answers, { target: 'antigravity', scope: 'global' });
+});
+
+test('applies interactive choices before installation validation', () => {
+  const options = { command: 'install' };
+
+  applySelection(options, { target: 'antigravity', scope: 'project' });
+
+  assert.equal(options.target, 'antigravity');
+  assert.equal(options.scope, 'project');
 });
