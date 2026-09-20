@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import { createInterface } from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { select } from '@inquirer/prompts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = join(repoRoot, 'skills', 'pitcrew');
@@ -46,18 +45,30 @@ function parseArgs(args) {
   return options;
 }
 
+export async function chooseInteractive({ select: selectPrompt = select } = {}) {
+  const target = await selectPrompt({
+    message: 'Install for:',
+    choices: [
+      { name: 'Antigravity CLI', value: 'antigravity' },
+      { name: 'Codex', value: 'codex' },
+      { name: 'Claude Code', value: 'claude' },
+      { name: 'All', value: 'all' },
+    ],
+  });
+  const scope = await selectPrompt({
+    message: 'Install scope:',
+    choices: [
+      { name: 'This project', value: 'project' },
+      { name: 'Global (all projects)', value: 'global' },
+    ],
+  });
+  return { target, scope };
+}
+
 async function choose(options) {
   if (options.target && options.scope) return options;
-  if (!input.isTTY || !output.isTTY) throw new Error('Pass --target and --scope in non-interactive mode.');
-
-  const rl = createInterface({ input, output });
-  try {
-    options.target ||= (await rl.question('Install for (antigravity/codex/claude/all): ')).trim();
-    options.scope ||= (await rl.question('Install scope (project/global): ')).trim();
-  } finally {
-    rl.close();
-  }
-  return options;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('Pass --target and --scope in non-interactive mode.');
+  return { ...options, ...(await chooseInteractive()) };
 }
 
 function destinations(target, scope, cwd) {
@@ -97,7 +108,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`pitcrew: ${error.message}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(`pitcrew: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
