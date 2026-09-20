@@ -1,0 +1,22 @@
+{
+  "name": "pitcrew",
+  "version": "0.1.0",
+  "description": "Install the Pitcrew Agent Skill for supported coding-agent harnesses",
+  "type": "module",
+  "bin": {
+    "pitcrew": "bin/pitcrew.js"
+  },
+  "files": [
+    "bin",
+    "skills/pitcrew",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
