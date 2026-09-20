@@ -1,0 +1,7 @@
+interface:
+  display_name: "Pitcrew"
+  short_description: "Evidence-driven engineering workflow for risky coding-agent work"
+  default_prompt: "Use $pitcrew to investigate this task and advance only when the current gate is satisfied."
+
+policy:
+  allow_implicit_invocation: true

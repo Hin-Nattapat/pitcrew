@@ -100,6 +100,47 @@ The skill first classifies risk. Low-risk local work exits to the repository's n
 
 Pitcrew owns task state and gates. Brainstorming, grilling, debugging, TDD, and code review remain optional reasoning techniques inside the relevant phase. They do not become competing orchestrators.
 
+## Capability providers
+
+Pitcrew owns orchestration but may delegate bounded reasoning work to separately installed skills. These skills are capability providers, not workflow owners.
+
+| Capability | Example provider | Boundary |
+|---|---|---|
+| `brainstorm` | `superpowers:brainstorming` | Clarifies intent and explores alternatives, then returns its result to the current Pitcrew phase. |
+| `challenge` | `grilling` or `grill-me-with-docs` | Challenges the evidence-backed analysis or plan, then returns findings without advancing task state. |
+
+Agent Skill metadata does not provide portable skill-to-skill dependency installation. Pitcrew therefore must not assume an external provider is present or attempt to install one implicitly. Public installation includes a small built-in procedure for each required capability so the core workflow remains usable by itself.
+
+A consuming repository may select stricter providers in `.pitcrew/config.yaml`:
+
+```yaml
+providers:
+  brainstorm: superpowers:brainstorming
+  challenge: grilling
+
+requirements:
+  missing_provider: stop
+```
+
+`missing_provider` has two policies:
+
+- `fallback` uses Pitcrew's built-in procedure and records that choice. This is the public default.
+- `stop` reports the missing skill and waits for the user to install it or change the project configuration.
+
+Provider selection changes reasoning inside a phase only. A provider cannot approve a gate, freeze or revise a plan, mutate Pitcrew task state, or continue into another phase. Control always returns to Pitcrew.
+
+For reproducibility, every task records the resolved harness, model, Pitcrew version, and provider identities when known:
+
+```yaml
+environment:
+  harness: claude-code
+  model: provider/model-version
+  pitcrew_version: 0.1.0
+  providers:
+    brainstorm: superpowers:brainstorming@6.4.1
+    challenge: grilling@1.0.0
+```
+
 ## Evaluation design
 
 Pitcrew must be evaluated against ordinary agent behavior, not against another model.
@@ -110,7 +151,8 @@ Each comparison holds constant:
 - repository revision and starting state;
 - model and model version;
 - agent harness and tool permissions;
-- starting prompt and available source material.
+- starting prompt and available source material;
+- reasoning provider names, versions, and missing-provider policy.
 
 The control arm works without Pitcrew. The treatment arm uses Pitcrew. Run order should be balanced, outputs should be scored against the same rubric, and reviewers should be blind to the arm where practical. A single paired run is a smoke test, not evidence of effectiveness.
 
@@ -164,7 +206,9 @@ Directories are created only when their first real file is ready. Empty placehol
 
 ## Distribution
 
-The canonical source is `skills/pitcrew/`. V0 documents installation into a project or user skill directory for Claude Code and Codex. Harness-specific adapters are added only when the common Agent Skills package cannot express required behavior.
+The canonical source is `skills/pitcrew/`. Direct installation into a project or user skill directory remains useful for local development and trials. Public reusable distribution packages the skill as a minimal plugin because plugins provide the installable unit for sharing one or more skills across repositories.
+
+V0 includes one Pitcrew skill. External reasoning providers remain separate installations. The plugin does not silently bundle or copy third-party skills. Harness-specific manifests or adapters are added only where the shared Agent Skills package cannot express required installation behavior.
 
 The repository is public and implementation-neutral. Company-specific topology, service names, credentials, production data, and proprietary business rules remain outside it.
 
@@ -204,4 +248,4 @@ These remain explicit until evidence resolves them:
 3. What minimum number of paired tasks gives a useful signal within the available token budget?
 4. Which installation layout works consistently across current Claude Code and Codex releases?
 5. When does a change qualify as plan drift rather than an implementation detail?
-
+6. Which provider identifiers remain stable across plugin namespaces and direct skill installations?
