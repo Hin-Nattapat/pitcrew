@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync, lstatSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { applySelection, chooseInteractive } from '../bin/pitcrew.js';
+import { PassThrough } from 'node:stream';
+import { applySelection, chooseInteractive, loadSelect, numberedSelect } from '../bin/pitcrew.js';
 
 const installer = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'bin', 'pitcrew.js');
 
@@ -67,4 +68,101 @@ test('applies interactive choices before installation validation', () => {
 
   assert.equal(options.target, 'antigravity');
   assert.equal(options.scope, 'project');
+});
+
+test('installs Antigravity globally where Antigravity discovers skills', () => {
+  const output = execFileSync(process.execPath, [installer, 'install', '--target', 'antigravity', '--scope', 'global', '--dry-run'], {
+    encoding: 'utf8',
+  });
+
+  assert.match(output, /\.gemini\/config\/skills\/pitcrew$/m);
+});
+
+test('reports every global destination a harness actually reads', () => {
+  const output = execFileSync(process.execPath, [installer, 'install', '--target', 'all', '--scope', 'global', '--dry-run'], {
+    encoding: 'utf8',
+  });
+
+  assert.match(output, /\.gemini\/config\/skills\/pitcrew$/m);
+  assert.match(output, /\.agents\/skills\/pitcrew$/m);
+  assert.match(output, /\.claude\/skills\/pitcrew$/m);
+  assert.doesNotMatch(output, /antigravity-cli/);
+});
+
+test('links the skill instead of copying it', () => {
+  const project = mkdtempSync(join(tmpdir(), 'pitcrew-install-'));
+
+  execFileSync(process.execPath, [installer, 'install', '--target', 'codex', '--scope', 'project', '--link'], {
+    cwd: project,
+    stdio: 'pipe',
+  });
+
+  const destination = join(project, '.agents', 'skills', 'pitcrew');
+  assert.ok(lstatSync(destination).isSymbolicLink());
+  assert.match(readFileSync(join(destination, 'SKILL.md'), 'utf8'), /^---\nname: pitcrew/m);
+});
+
+test('--force replaces a copied installation with a link', () => {
+  const project = mkdtempSync(join(tmpdir(), 'pitcrew-install-'));
+  const destination = join(project, '.agents', 'skills', 'pitcrew');
+
+  execFileSync(process.execPath, [installer, 'install', '--target', 'codex', '--scope', 'project'], { cwd: project, stdio: 'pipe' });
+  assert.equal(lstatSync(destination).isSymbolicLink(), false);
+
+  execFileSync(process.execPath, [installer, 'install', '--target', 'codex', '--scope', 'project', '--link', '--force'], {
+    cwd: project,
+    stdio: 'pipe',
+  });
+
+  assert.ok(lstatSync(destination).isSymbolicLink());
+});
+
+test('--force clears files a previous installation left behind', () => {
+  const project = mkdtempSync(join(tmpdir(), 'pitcrew-install-'));
+  const destination = join(project, '.agents', 'skills', 'pitcrew');
+
+  execFileSync(process.execPath, [installer, 'install', '--target', 'codex', '--scope', 'project'], { cwd: project, stdio: 'pipe' });
+  writeFileSync(join(destination, 'stale.md'), 'removed in a later release');
+
+  execFileSync(process.execPath, [installer, 'install', '--target', 'codex', '--scope', 'project', '--force'], {
+    cwd: project,
+    stdio: 'pipe',
+  });
+
+  assert.equal(existsSync(join(destination, 'stale.md')), false);
+});
+
+const CHOICES = [{ name: 'Antigravity CLI', value: 'antigravity' }, { name: 'Codex', value: 'codex' }];
+
+function ask(answers) {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const pending = [...answers];
+  const transcript = { text: '' };
+
+  output.on('data', (chunk) => {
+    transcript.text += chunk;
+    if (chunk.toString().endsWith('> ') && pending.length) input.write(`${pending.shift()}\n`);
+  });
+
+  return { input, output, transcript };
+}
+
+test('prefers the installed arrow-key select prompt', async () => {
+  assert.notEqual(await loadSelect(), numberedSelect);
+});
+
+test('the fallback prompt lists every choice and returns the selected value', async () => {
+  const { input, output, transcript } = ask(['2']);
+
+  assert.equal(await numberedSelect({ message: 'Install for:', choices: CHOICES, input, output }), 'codex');
+  assert.match(transcript.text, /1\) Antigravity CLI/);
+  assert.match(transcript.text, /2\) Codex/);
+});
+
+test('the fallback prompt reasks until the answer names a listed choice', async () => {
+  const { input, output, transcript } = ask(['9', 'codex', '1']);
+
+  assert.equal(await numberedSelect({ message: 'Install for:', choices: CHOICES, input, output }), 'antigravity');
+  assert.equal(transcript.text.match(/Enter one of the listed numbers\./g).length, 2);
 });

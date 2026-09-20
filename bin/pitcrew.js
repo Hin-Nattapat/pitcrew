@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { cpSync, lstatSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
-import { select } from '@inquirer/prompts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = join(repoRoot, 'skills', 'pitcrew');
 
 const targets = {
-  antigravity: { label: 'Antigravity CLI', project: ['.agents', 'skills'], global: ['.gemini', 'antigravity-cli', 'skills'] },
+  antigravity: { label: 'Antigravity CLI', project: ['.agents', 'skills'], global: ['.gemini', 'config', 'skills'] },
   codex: { label: 'Codex', project: ['.agents', 'skills'], global: ['.agents', 'skills'] },
   claude: { label: 'Claude Code', project: ['.claude', 'skills'], global: ['.claude', 'skills'] },
 };
@@ -24,6 +24,7 @@ Usage:
 Options:
   --target <antigravity|codex|claude|all>
   --scope <project|global>
+  --link        symlink the skill so a git pull updates every harness at once
   --force       replace an existing Pitcrew installation
   --dry-run     show destinations without writing files
   --help`);
@@ -31,13 +32,14 @@ Options:
 
 function parseArgs(args) {
   const first = args[0];
-  const options = { command: first && !first.startsWith('-') ? first : first ? 'install' : 'help', force: false, dryRun: false };
+  const options = { command: first && !first.startsWith('-') ? first : first ? 'install' : 'help', force: false, dryRun: false, link: false };
   const start = first && !first.startsWith('-') ? 1 : 0;
   for (let index = start; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === '--help' || arg === '-h') options.command = 'help';
     else if (arg === '--force') options.force = true;
     else if (arg === '--dry-run') options.dryRun = true;
+    else if (arg === '--link') options.link = true;
     else if (arg === '--target') options.target = args[++index];
     else if (arg === '--scope') options.scope = args[++index];
     else throw new Error(`Unknown option: ${arg}`);
@@ -45,7 +47,43 @@ function parseArgs(args) {
   return options;
 }
 
-export async function chooseInteractive({ select: selectPrompt = select } = {}) {
+function exists(path) {
+  try {
+    lstatSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function numberedSelect({ message, choices, input = process.stdin, output = process.stdout }) {
+  const rl = createInterface({ input, output });
+  try {
+    const list = choices.map(({ name }, index) => `  ${index + 1}) ${name}`).join('\n');
+    for (;;) {
+      const answer = await rl.question(`${message}\n${list}\n> `);
+      const choice = choices[Number.parseInt(answer.trim(), 10) - 1];
+      if (choice) return choice.value;
+      output.write('Enter one of the listed numbers.\n');
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+export async function loadSelect() {
+  try {
+    return (await import('@inquirer/prompts')).select;
+  } catch {
+    return numberedSelect;
+  }
+}
+
+async function promptSelect(options) {
+  return (await loadSelect())(options);
+}
+
+export async function chooseInteractive({ select: selectPrompt = promptSelect } = {}) {
   const target = await selectPrompt({
     message: 'Install for:',
     choices: [
@@ -93,22 +131,24 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.command === 'help') return usage();
   if (options.command !== 'install') throw new Error(`Unknown command: ${options.command}`);
-  if (!existsSync(source)) throw new Error(`Pitcrew skill source is missing: ${source}`);
+  if (!exists(source)) throw new Error(`Pitcrew skill source is missing: ${source}`);
 
   applySelection(options, await choose(options));
   if (!['antigravity', 'codex', 'claude', 'all'].includes(options.target)) throw new Error(`Invalid target: ${options.target}`);
   if (!['project', 'global'].includes(options.scope)) throw new Error(`Invalid scope: ${options.scope}`);
 
   const locations = destinations(options.target, options.scope, process.cwd());
-  const existing = locations.filter(({ path }) => existsSync(path) && !options.force);
+  const existing = locations.filter(({ path }) => exists(path) && !options.force);
   if (existing.length) throw new Error(`${existing.map(({ path }) => path).join(', ')} already exists; use --force to replace it.`);
 
   for (const { path, label } of locations) {
-    console.log(`${options.dryRun ? 'Would install' : 'Installing'} Pitcrew for ${label}: ${path}`);
-    if (!options.dryRun) {
-      mkdirSync(dirname(path), { recursive: true });
-      cpSync(source, path, { recursive: true, force: true });
-    }
+    const action = options.link ? 'link' : 'install';
+    console.log(`${options.dryRun ? `Would ${action}` : `${action === 'link' ? 'Linking' : 'Installing'}`} Pitcrew for ${label}: ${path}`);
+    if (options.dryRun) continue;
+    mkdirSync(dirname(path), { recursive: true });
+    if (exists(path)) rmSync(path, { recursive: true, force: true });
+    if (options.link) symlinkSync(source, path);
+    else cpSync(source, path, { recursive: true });
   }
 }
 

@@ -26,58 +26,74 @@ Use Pitcrew for unfamiliar brownfield code, cross-repository changes, shared con
 | `VERIFYING` | Scrutineering | Requirements, risks, impact, changes, and tests reconcile. |
 | `DONE` | Chequered Flag | No blocking unknown remains. |
 
-## Install with the Pitcrew wizard
+## Install
 
-The wizard asks which harness and scope to install. Clone Pitcrew once, then run it from the project you want to configure:
+Clone once, then pick a route.
 
 ```bash
 git clone https://github.com/Hin-Nattapat/pitcrew.git ~/Tools/pitcrew
-cd ~/Tools/pitcrew
-npm install
+```
+
+### Link it (recommended while Pitcrew is changing)
+
+One symlink per skills directory. `git pull` in the clone then updates every harness at once, so no run can silently test a stale copy of the skill.
+
+```bash
+ln -s ~/Tools/pitcrew/skills/pitcrew ~/.agents/skills/pitcrew        # Codex, Antigravity CLI
+ln -s ~/Tools/pitcrew/skills/pitcrew ~/.claude/skills/pitcrew        # Claude Code
+```
+
+The wizard does the same thing with `--link`, including project scope:
+
+```bash
+cd <target-project>
+node ~/Tools/pitcrew/bin/pitcrew.js install --link
+```
+
+Antigravity CLI is known to discover skills through a symlinked skills directory. Discovery of an individually symlinked skill is verified for neither Claude Code nor Codex; run `/skills` (Antigravity), `/plugin` or the skill list (Claude Code), or `$pitcrew` (Codex) once to confirm before relying on it.
+
+### Copy it (wizard)
+
+The wizard asks which harness and scope to install, and copies the skill. It needs Node 18+.
+
+```bash
+cd ~/Tools/pitcrew && npm install
 cd <target-project>
 node ~/Tools/pitcrew/bin/pitcrew.js install
 ```
 
-Replace `<target-project>` with the project directory; do not run the placeholder literally.
+`npm install` buys the arrow-key prompt. Without it the wizard still runs and asks the same two questions as a numbered list, so a fresh clone is never blocked.
 
-For automation, pass the choices directly:
+Replace `<target-project>` with the project directory; do not run the placeholder literally. For automation, pass the choices directly:
 
 ```bash
 node ~/Tools/pitcrew/bin/pitcrew.js install --target antigravity --scope project
 ```
 
-Supported targets are `antigravity`, `codex`, `claude`, and `all`. Supported scopes are `project` and `global`. `--dry-run` previews destinations; existing installations require `--force`.
+Supported targets are `antigravity`, `codex`, `claude`, and `all`. Supported scopes are `project` and `global`. `--link` symlinks instead of copying, `--dry-run` previews destinations, and existing installations require `--force`.
 
-After publishing the npm package, the same interface will be available as:
+After publishing the npm package, the same interface will be available as `npx pitcrew install`. The package is not published yet.
 
-```bash
-npx pitcrew install
+### Destinations
+
+| Harness | Project | Global |
+|---|---|---|
+| Antigravity CLI | `.agents/skills/pitcrew` | `~/.gemini/config/skills/pitcrew` |
+| Codex | `.agents/skills/pitcrew` | `~/.agents/skills/pitcrew` |
+| Claude Code | `.claude/skills/pitcrew` | `~/.claude/skills/pitcrew` |
+
+Start `agy` and run `/skills` to confirm Antigravity discovery, then invoke `/pitcrew`. Codex invokes it as `$pitcrew`.
+
+## Install for Claude Code as a plugin
+
+The repository also carries a marketplace manifest, so Claude Code can install it without a clone:
+
+```text
+/plugin marketplace add Hin-Nattapat/pitcrew
+/plugin install pitcrew@pitcrew
 ```
 
-## Install for Antigravity CLI
-
-The project-local destination is `.agents/skills/pitcrew`, which Antigravity CLI discovers automatically. Start `agy`, run `/skills` to confirm discovery, then invoke `/pitcrew`. The global destination is `~/.gemini/antigravity-cli/skills/pitcrew`.
-
-## Install for Codex
-
-The wizard installs the skill into the target project's `.agents/skills/` directory. To do it manually from the clone:
-
-```bash
-mkdir -p .agents/skills
-cp -R ~/Tools/pitcrew/skills/pitcrew .agents/skills/
-```
-
-Invoke it as `$pitcrew`. This project-local route is verified. Marketplace installation is future work and is not yet documented as available.
-
-## Install for Claude Code
-
-The wizard installs the direct skill into `.claude/skills/`. For plugin development, run Claude Code with the clone:
-
-```bash
-claude --plugin-dir ~/Tools/pitcrew
-```
-
-Invoke the plugin skill as `/pitcrew:pitcrew`. Plugin discovery and manifest validation are verified; a behavioral Claude run and public marketplace installation are not yet verified.
+This route is not yet verified against the published repository. For plugin development from the clone, run `claude --plugin-dir ~/Tools/pitcrew`. Invoke the plugin skill as `/pitcrew:pitcrew`. Local plugin discovery and manifest validation are verified; a behavioral Claude run and the marketplace route are not.
 
 ## First task
 
