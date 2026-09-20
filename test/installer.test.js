@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { applySelection, chooseInteractive } from '../bin/pitcrew.js';
+import { PassThrough } from 'node:stream';
+import { applySelection, chooseInteractive, loadSelect, numberedSelect } from '../bin/pitcrew.js';
 
 const installer = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'bin', 'pitcrew.js');
 
@@ -129,4 +130,39 @@ test('--force clears files a previous installation left behind', () => {
   });
 
   assert.equal(existsSync(join(destination, 'stale.md')), false);
+});
+
+const CHOICES = [{ name: 'Antigravity CLI', value: 'antigravity' }, { name: 'Codex', value: 'codex' }];
+
+function ask(answers) {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const pending = [...answers];
+  const transcript = { text: '' };
+
+  output.on('data', (chunk) => {
+    transcript.text += chunk;
+    if (chunk.toString().endsWith('> ') && pending.length) input.write(`${pending.shift()}\n`);
+  });
+
+  return { input, output, transcript };
+}
+
+test('prefers the installed arrow-key select prompt', async () => {
+  assert.notEqual(await loadSelect(), numberedSelect);
+});
+
+test('the fallback prompt lists every choice and returns the selected value', async () => {
+  const { input, output, transcript } = ask(['2']);
+
+  assert.equal(await numberedSelect({ message: 'Install for:', choices: CHOICES, input, output }), 'codex');
+  assert.match(transcript.text, /1\) Antigravity CLI/);
+  assert.match(transcript.text, /2\) Codex/);
+});
+
+test('the fallback prompt reasks until the answer names a listed choice', async () => {
+  const { input, output, transcript } = ask(['9', 'codex', '1']);
+
+  assert.equal(await numberedSelect({ message: 'Install for:', choices: CHOICES, input, output }), 'antigravity');
+  assert.equal(transcript.text.match(/Enter one of the listed numbers\./g).length, 2);
 });

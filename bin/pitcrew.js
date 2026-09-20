@@ -56,19 +56,31 @@ function exists(path) {
   }
 }
 
-async function promptSelect({ message, choices }) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
+export async function numberedSelect({ message, choices, input = process.stdin, output = process.stdout }) {
+  const rl = createInterface({ input, output });
   try {
     const list = choices.map(({ name }, index) => `  ${index + 1}) ${name}`).join('\n');
     for (;;) {
       const answer = await rl.question(`${message}\n${list}\n> `);
       const choice = choices[Number.parseInt(answer.trim(), 10) - 1];
       if (choice) return choice.value;
-      console.log('Enter one of the listed numbers.');
+      output.write('Enter one of the listed numbers.\n');
     }
   } finally {
     rl.close();
   }
+}
+
+export async function loadSelect() {
+  try {
+    return (await import('@inquirer/prompts')).select;
+  } catch {
+    return numberedSelect;
+  }
+}
+
+async function promptSelect(options) {
+  return (await loadSelect())(options);
 }
 
 export async function chooseInteractive({ select: selectPrompt = promptSelect } = {}) {

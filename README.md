@@ -54,12 +54,15 @@ Antigravity CLI is known to discover skills through a symlinked skills directory
 
 ### Copy it (wizard)
 
-The wizard asks which harness and scope to install, and copies the skill. It needs Node 18+ and no dependencies — no `npm install` step.
+The wizard asks which harness and scope to install, and copies the skill. It needs Node 18+.
 
 ```bash
+cd ~/Tools/pitcrew && npm install
 cd <target-project>
 node ~/Tools/pitcrew/bin/pitcrew.js install
 ```
+
+`npm install` buys the arrow-key prompt. Without it the wizard still runs and asks the same two questions as a numbered list, so a fresh clone is never blocked.
 
 Replace `<target-project>` with the project directory; do not run the placeholder literally. For automation, pass the choices directly:
 
