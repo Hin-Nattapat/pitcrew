@@ -91,3 +91,86 @@ What a reader wanted to skip: the full artifact set on short fixes and urgent bu
 `VERIFYING` reconciles requirements, risks, impacts, changes, and tests. A house-style violation is none of those, and `verification.md` has no column that would hold one, so a task can reach `DONE` with passing tests, a clean linter, and code that the repository's own conventions reject.
 
 Pitcrew is implementation-neutral and cannot carry any repository's conventions. Before changing the gate, a scenario has to reproduce the failure: a fixture whose documented standard is violated by code that passes its tests.
+
+## FIELD-002
+
+Date: 2026-09-21
+Harness and version: Claude Code, version unavailable
+Model: unavailable — not recorded in the report. Recoverable from the session transcript.
+Skill revision: unavailable — installed by copy, no revision recorded at install time
+Repository shape: five products across two workspaces, sharing one business rule that spans a storefront service, a point-of-sale service, and its terminal UI
+Task shape: close every write path that could break one invariant — a bill may not hold balances belonging to two different account holders
+
+### Routing
+Routed into Pitcrew: yes
+Was that the right call: yes — the rule spans repositories and the write paths were not known at the start
+Artifacts created: `discovery.md`, `evidence.md`, `unknowns.md`, `impact.md`, `problems.md` (not a Pitcrew artifact; the agent invented it), `plan.md`, `status.md`
+
+### Observed
+Accepted: no. Work stopped with the user refusing to plan further against the agent's output.
+Rework cycles: three. The agent stated three architectural conclusions as fact and reversed each after later reading.
+Drift fired: yes — `PLAN_DRIFT` was entered after a review found write paths the plan did not cover.
+Human interventions: continuous. The user re-asked what a finding meant three separate times, then stopped the work.
+Gates that changed the outcome: `DISCOVERY` produced a correct and complete map of the write paths. Every other gate failed — see below.
+Context resets, and what resumption cost: none recorded.
+Input tokens / output tokens / cache read: unavailable in the report. This harness records per-message usage locally, so these are recoverable for a future entry.
+Elapsed time: roughly 45 minutes of wall clock across the reported timestamps.
+
+### Friction
+Where the process cost more than it returned: the artifacts were written and then not consulted. See G2.
+What a reader wanted to skip: nothing. The user's objection was the opposite — the process produced output they could not act on.
+
+### Estimated, not measured
+Nothing. This entry reports only quoted behavior from the session.
+
+## Gaps FIELD-002 opens
+
+### G1 — the approval gate did not hold
+
+The task sat in `PLAN_DRIFT` with three unresolved unknowns. The agent then wrote code, ran tests, and committed to two repositories. No revised plan version was approved first.
+
+`references/workflow.md` requires a new plan version to be approved before implementation resumes. Nothing enforced it. The gate is a sentence addressed to the same agent it is meant to restrain.
+
+This is the first recorded invalid state transition, which is the condition `docs/problem-review.md` names for adding deterministic tooling.
+
+### G2 — a claim is never checked against recorded evidence
+
+The agent wrote a correct fact into `discovery.md`, then contradicted it fourteen lines later in another artifact, and proposed a change built on the contradiction. In its own words:
+
+> The fact was in the same directory, less than a page apart. I did not connect them — not unread, but read and unused.
+
+Pitcrew requires evidence to be written down. Nothing requires a later claim to be checked against what was written. Artifacts accumulate; they do not constrain.
+
+### G3 — evidence admissibility is undefined
+
+Twice the agent cited a source comment as proof that a runtime case occurs. A comment is a past author's claim about intent, not observed behavior.
+
+`references/task-artifacts.md` gives `evidence.md` an `Observation` field and never says what may fill it.
+
+### G4 — unknowns escalate without extent
+
+Each unresolved unknown reached the user as a mechanism with no bound: no count of affected call sites, no count of affected rows, no statement of what a fix would disturb. The user could not decide, and said so:
+
+> Every problem you raise is unbounded. How am I supposed to answer whether the fix is right?
+
+`unknowns.md` records Question, Status, Resolution, Owner. It has no field for extent or blast radius.
+
+### G5 — questions arrive one at a time
+
+Three unknowns were raised across three separate exchanges, each costing a full round trip. The user's word for the result was "going in circles."
+
+### G6 — the answers were unusable
+
+The largest objection, and the one the user ranked above every other. Asked what a single finding was, the agent returned a multi-step walkthrough, a secondary path, a caveat, and a query to run. Asked again, it returned more. The user's summary:
+
+> I still do not understand what problems U3, U4 and U5 even are.
+
+The agent also narrated its own reasoning and error history back to the user, who had explicitly asked it not to.
+
+Two properties make this measurable rather than a matter of taste: a following message in which the human asks what the previous one meant is a recorded failure of that message, and output length per message is a number. Both are recoverable from this harness's transcripts.
+
+### G7 — the coverage check accepts confidence instead of a count
+
+`discovery.md` carries a free-text `Coverage check`. The agent later identified what would have caught its own error before any code was written: one search for every site that writes the field returned five, and the plan covered two. A gap of three, visible before the first line of implementation.
+
+A field that accepts prose accepts an assurance. A field that requires two numbers does not.
