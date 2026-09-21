@@ -2,6 +2,8 @@
 
 Store durable state under `.pitcrew/tasks/<task-id>/`. Record conclusions and evidence, not raw transcripts.
 
+Two files there are not artifacts. `chk.sh` is copied once from the skill's `assets/`, and `check.sh` is the task's gate script, described in [checks.md](checks.md). Neither records anything; they decide whether a state may advance.
+
 ## `intake.md`
 
 ```markdown
